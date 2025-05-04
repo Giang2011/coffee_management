@@ -33,7 +33,7 @@ class CartController extends Controller
                 'product_id' => $validated['product_id'],
             ],
             [
-                'quantity' => DB::raw('quantity + ' . $validated['quantity']),
+                'quantity' => $validated['quantity'],
             ]
         );
 

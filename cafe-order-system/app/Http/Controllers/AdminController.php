@@ -9,6 +9,7 @@ use App\Models\Voucher;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -22,6 +23,19 @@ class AdminController extends Controller
     
     public function createProduct(Request $request)
     {
+        Log::info('Request received', $request->all());
+        //return response()->json(['message' => 'Debugging createProduct']);
+
+        Log::info('Request data:', $request->all());
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            Log::info('File data:', [
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -63,6 +77,7 @@ class AdminController extends Controller
             'category_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Validate ảnh
         ]);
+        // Log::info('Validated data:', $validated);
 
         $product = Product::find($id);
 
@@ -171,6 +186,9 @@ class AdminController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|unique:vouchers,code',
             'discount_percent' => 'required|numeric|min:0|max:100',
+            'start_date' => 'required|date', // Ngày bắt đầu
+            'end_date' => 'required|date|after_or_equal:start_date', // Ngày kết thúc
+            'max_usage' => 'nullable|integer|min:1', // Số lần sử dụng tối đa
         ]);
 
         $voucher = Voucher::create($validated);
@@ -183,6 +201,9 @@ class AdminController extends Controller
         $validated = $request->validate([
             'code' => 'nullable|string|unique:vouchers,code,' . $id,
             'discount_percent' => 'nullable|numeric|min:0|max:100',
+            'start_date' => 'nullable|date', // Ngày bắt đầu
+            'end_date' => 'nullable|date|after_or_equal:start_date', // Ngày kết thúc
+            'max_usage' => 'nullable|integer|min:1', // Số lần sử dụng tối đa
         ]);
 
         $voucher = Voucher::find($id);
@@ -198,7 +219,26 @@ class AdminController extends Controller
 
     public function listOrders()
     {
-        $orders = Order::with('user', 'order_details.product')->get();
+        $orders = Order::with(['user', 'order_details.product', 'voucher'])->get();
+
+        // Tính tổng giá tiền cho từng đơn hàng (bao gồm giảm giá từ voucher nếu có)
+        $orders->each(function ($order) {
+            // Tính tổng giá tiền gốc từ order_details
+            $totalCost = $order->order_details->sum(function ($detail) {
+                return $detail->price * $detail->quantity;
+            });
+
+            // Áp dụng giảm giá từ voucher (nếu có)
+            $discount = 0;
+            if ($order->voucher) {
+                $discount = $totalCost * ($order->voucher->discount_percent / 100);
+            }
+
+            // Lưu tổng giá tiền sau khi áp dụng giảm giá
+            $order->total_cost = $totalCost - $discount;
+            $order->discount = $discount; // Thêm thông tin giảm giá vào response
+        });
+
         return response()->json($orders);
     }
 

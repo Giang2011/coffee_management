@@ -24,7 +24,7 @@ Route::middleware(['auth:sanctum','role:user'])->group(function () { // route c�
     Route::post('/cart', [CartController::class, 'store']); // Thêm sản phẩm vào giỏ hàng
     Route::put('/cart/{id}', [CartController::class, 'update']); // Cập nhật số lượng sản phẩm
     Route::delete('/cart/{id}', [CartController::class, 'destroy']); // Xóa sản phẩm khỏi giỏ hàng
-    Route::get('/checkout', [OrderController::class, 'checkout']); // Bước 1: Hiển thị thông tin giỏ hàng
+    Route::post('/checkout', [OrderController::class, 'checkout']); // Bước 1: Hiển thị thông tin giỏ hàng
     Route::post('/order', [OrderController::class, 'placeOrder']); // Bước 2: Xử lý đặt hàng
 });
 
