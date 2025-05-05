@@ -172,7 +172,7 @@ Nếu không có sản phẩm nào trong giỏ hàng thì nó trả về json(['
 ```
 -**Đầu ra**: json(['message' => 'Product added to cart', 'cart_item' => $cartItem]); cart_item là sản phẩm vừa được thêm vào
 
-- **Cập nhật số lượng sản phẩm trong giỏ hàng**
+-**Cập nhật số lượng sản phẩm trong giỏ hàng**
   - **Phương thức**: `PUT`
   - **Endpoint**: `/cart/{id}`
   - **Mô tả**: Cập nhật số lượng sản phẩm trong giỏ hàng.
