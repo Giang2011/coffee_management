@@ -20,8 +20,8 @@ class UserController extends Controller
             'password' => 'required|min:6',
             'full_name' => 'required|string|max:255',
             'phone_number' => 'required|string|max:15', // Thêm số điện thoại
-            // 'security_question' => 'required|string|max:255', // Câu hỏi bảo mật
-            // 'answer' => 'required|string|max:255', // Câu trả lời bảo mật
+            'security_question' => 'required|string|max:255', // Câu hỏi bảo mật
+            'answer' => 'required|string|max:255', // Câu trả lời bảo mật
         ]);
 
         $user = User::create([
@@ -29,8 +29,8 @@ class UserController extends Controller
             'password' => bcrypt($validated['password']),
             'full_name' => $validated['full_name'],
             'phone_number' => $validated['phone_number'], // Lưu số điện thoại
-            // 'security_question' => $validated['security_question'], // Lưu câu hỏi bảo mật
-            // 'answer' => $validated['answer'], // Lưu câu trả lời bảo mật
+            'security_question' => $validated['security_question'], // Lưu câu hỏi bảo mật
+            'answer' => $validated['answer'], // Lưu câu trả lời bảo mật
         ]);
 
         return response()->json(['message' => 'User registered successfully', 
@@ -55,6 +55,62 @@ class UserController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json(['message' => 'Login successful', 'token' => $token, 'user' => $user]);
+    }
+
+    public function recoverAccount(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Email không tồn tại'], 404);
+        }
+
+            return response()->json(['Câu hỏi bảo mật' => $user->security_question]);
+
+    }
+
+    public function recover(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'security_answer' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Email không tồn tại'], 404);
+        }
+
+        if ($user->answer === $request->security_answer) {
+            // Trả về thông tin cần thiết hoặc gửi email khôi phục
+            return response()->json(['message' => 'Xác thực thành công.', 'user_id' => $user->id]);
+        }
+
+        return response()->json(['message' => 'Câu trả lời bảo mật không chính xác'], 400);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer',
+            'new_password' => 'required|min:6',
+        ]);
+
+        $user = User::find($request->user_id);
+
+        if (!$user) {
+            return response()->json(['message' => 'Email không tồn tại'], 404);
+        }
+
+        $user->password = bcrypt($request->new_password);
+        $user->save();
+
+        return response()->json(['message' => 'Mật khẩu đã được đặt lại thành công']);
     }
 
     public function getUser(Request $request)

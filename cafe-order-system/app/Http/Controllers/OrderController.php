@@ -27,7 +27,7 @@ class OrderController extends Controller
     }
 
     // Lấy địa chỉ mặc định (kể cả khi null)
-    $defaultAddress = $user->address;
+    $defaultAddress = $request->input('address') ?? $user->address;
 
     // Lấy các phương thức thanh toán
     $paymentMethods = PaymentMethod::all();

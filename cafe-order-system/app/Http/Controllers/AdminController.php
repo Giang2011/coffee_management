@@ -23,18 +23,18 @@ class AdminController extends Controller
     
     public function createProduct(Request $request)
     {
-        Log::info('Request received', $request->all());
-        //return response()->json(['message' => 'Debugging createProduct']);
+        // Log::info('Request received', $request->all());
+        // //return response()->json(['message' => 'Debugging createProduct']);
 
-        Log::info('Request data:', $request->all());
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            Log::info('File data:', [
-                'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-            ]);
-        }
+        // Log::info('Request data:', $request->all());
+        // if ($request->hasFile('image')) {
+        //     $file = $request->file('image');
+        //     Log::info('File data:', [
+        //         'original_name' => $file->getClientOriginalName(),
+        //         'mime_type' => $file->getMimeType(),
+        //         'size' => $file->getSize(),
+        //     ]);
+        // }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',

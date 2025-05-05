@@ -36,6 +36,7 @@ class CartController extends Controller
                 'quantity' => $validated['quantity'],
             ]
         );
+        
 
         return response()->json(['message' => 'Product added to cart', 'cart_item' => $cartItem]);
     }
