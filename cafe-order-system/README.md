@@ -163,14 +163,14 @@ Nếu không có sản phẩm nào trong giỏ hàng thì nó trả về json(['
   - **Phương thức**: `POST`
   - **Endpoint**: `/cart`
   - **Mô tả**: Thêm sản phẩm vào giỏ hàng.
--**Đầu vào**
-  ```json
+- **Đầu vào**
+```json
   {
   "product_id": "integer (bắt buộc)",
   "quantity": "integer (bắt buộc, tối thiểu 1)"
-}
+  }
 ```
--**Đầu ra**: json(['message' => 'Product added to cart', 'cart_item' => $cartItem]); cart_item là sản phẩm vừa được thêm vào
+- **Đầu ra**: json(['message' => 'Product added to cart', 'cart_item' => $cartItem]); cart_item là sản phẩm vừa được thêm vào
 
 -**Cập nhật số lượng sản phẩm trong giỏ hàng**
   - **Phương thức**: `PUT`
