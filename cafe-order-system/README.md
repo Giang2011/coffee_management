@@ -155,7 +155,7 @@ Trả về tất cả sản phẩm + category đi kèm (xem trong bảng erd đ�
   - **Phương thức**: `GET`
   - **Endpoint**: `/cart`
   - **Mô tả**: Lấy danh sách sản phẩm trong giỏ hàng.
-- **Đầu vào**: Token xác thực trong header.
+-**Đầu vào**: Token xác thực trong header.
 -  **Đầu ra**: Tất cả các sản phẩm có trong giỏ hàng, đầy đủ thông tin của bảng product
 Nếu không có sản phẩm nào trong giỏ hàng thì nó trả về json(['message' => 'Cart is empty'], 200);
 
