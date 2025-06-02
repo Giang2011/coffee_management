@@ -24,4 +24,17 @@ class ProductController extends Controller
 
         return response()->json($product);
     }
+
+    public function search($name)
+    {
+        $products = Product::with('category')
+            ->where('name', 'like', '%' . $name . '%')
+            ->get();
+
+        if ($products->isEmpty()) {
+            return response()->json(['message' => 'No products found'], 404);
+        }
+
+        return response()->json($products);
+    }
 }

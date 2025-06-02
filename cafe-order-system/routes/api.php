@@ -14,6 +14,7 @@ Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::get('/products', [ProductController::class, 'index']); // Lấy danh sách sản phẩm
 Route::get('/products/{id}', [ProductController::class, 'show']); // Lấy chi tiết sản phẩm
+Route::get('/products/search/{name}', [ProductController::class, 'search']); // Tìm kiếm sản phẩm theo tên
 Route::post('/recover-account', [UserController::class, 'recoverAccount']); // Khôi phục tài khoản qua câu hỏi bảo mật
 Route::post('/recover-account2', [UserController::class, 'recover']); // Khôi phục tài khoản qua câu hỏi bảo mật
 Route::post('/reset-password', [UserController::class, 'resetPassword']); // Đặt lại mật khẩu qua email
