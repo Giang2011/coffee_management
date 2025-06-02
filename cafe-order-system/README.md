@@ -104,6 +104,13 @@ Trả về tất cả sản phẩm + category đi kèm (xem trong bảng erd đ�
 - **Đầu vào**: {id} là ID của sản phẩm.
 - **Đầu ra** trả tất cả thông tin về sản phẩm đấy + category đi kèm
 
+### Lấy sản phẩm theo từ khóa tìm kiếm
+- **Phương thức**: `GET`
+- **Endpoint**: `/products/search/{name}`
+- **Mô tả**: Lấy thông tin các sản phẩm theo search.
+- **Đầu vào**: {name} là từ khóa nhập vào thanh searchbar.
+- **Đầu ra** trả tất cả thông tin về sản phẩm chứa từ khóa nhập name không phân biệt in hoa thường(kiểu nhập mat hoặc MAT thì nó sẽ ra sản phẩm matcha latte, matcha matme, ... cái gì chứa mat thì nó trả ra hết) + category đi kèm
+
 ---
 
 ## **2. Route Người Dùng (User Routes) Nhớ dùng token của user mới vào được**
