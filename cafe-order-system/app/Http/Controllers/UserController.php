@@ -27,10 +27,10 @@ class UserController extends Controller
         $user = User::create([
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
-            'full_name' => $validated['full_name'],
-            'phone_number' => $validated['phone_number'], // Lưu số điện thoại
-            'security_question' => $validated['security_question'], // Lưu câu hỏi bảo mật
-            'answer' => $validated['answer'], // Lưu câu trả lời bảo mật
+            'full_name' => $validated['full_name'] ?? null,
+            'phone_number' => $validated['phone_number'] ?? null,
+            'security_question' => $validated['security_question'] ?? null,
+            'answer' => $validated['answer'] ?? null,
         ]);
 
         return response()->json(['message' => 'User registered successfully', 
