@@ -18,10 +18,10 @@ class UserController extends Controller
         $validated = $request->validate([
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
-            'full_name' => 'required|string|max:255',
-            'phone_number' => 'required|string|max:15', // Thêm số điện thoại
-            'security_question' => 'required|string|max:255', // Câu hỏi bảo mật
-            'answer' => 'required|string|max:255', // Câu trả lời bảo mật
+            'full_name' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:15', // Thêm số điện thoại
+            'security_question' => 'nullable|string|max:255', // Câu hỏi bảo mật
+            'answer' => 'nullable|string|max:255', // Câu trả lời bảo mật
         ]);
 
         $user = User::create([
