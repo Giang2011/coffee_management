@@ -178,99 +178,101 @@ class OrderController extends Controller
 }
 
     public function getOrderDetails(Request $request, $id)
-    {
-        $user = $request->user();
-        $order = Order::with([
-            'status',
-            'orderDetails.product',
-            'deliveryInfo',
-            'paymentInfo',
-            'voucher'
-        ])
+{
+    $user = $request->user();
+    $order = Order::with([
+        'status',
+        'order_details.product', 
+        'delivery_info',
+        'payment_info.payment_method',
+        'voucher'
+    ])
+    ->where('user_id', $user->id)
+    ->find($id);
+
+    if (!$order) {
+        return response()->json(['message' => 'Order not found'], 404);
+    }
+
+    $total = $order->order_details->sum(function ($item) { 
+        return $item->price * $item->quantity;
+    });
+
+    return response()->json([
+        'id' => $order->id,
+        'order_date' => $order->order_date,
+        'status' => $order->status->name,
+        'total' => $total,
+        'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
+        'final_total' => $order->payment_info->amount ?? $total,
+        'payment_method' => $order->payment_info->payment_method->name ?? null,
+        'products' => $order->order_details->map(function ($item) { 
+            return [
+                'name' => $item->product->name,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+            ];
+        }),
+        'delivery_info' => $order->delivery_info,
+        'payment_info' => $order->payment_info,
+        'voucher' => $order->voucher,
+    ]);
+}
+
+
+    
+    public function cancelOrder(Request $request, $id)
+{
+    $user = $request->user();
+    $order = Order::with('status')
         ->where('user_id', $user->id)
         ->find($id);
 
-        if (!$order) {
-            return response()->json(['message' => 'Order not found'], 404);
-        }
-
-        $total = $order->orderDetails->sum(function ($item) {
-            return $item->price * $item->quantity;
-        });
-
-        return response()->json([
-            'id' => $order->id,
-            'order_date' => $order->order_date,
-            'status' => $order->status->name,
-            'total' => $total,
-            'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
-            'final_total' => $order->paymentInfo->amount ?? $total,
-            'products' => $order->orderDetails->map(function ($item) {
-                return [
-                    'name' => $item->product->name,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ];
-            }),
-            'delivery_info' => $order->deliveryInfo,
-            'payment_info' => $order->paymentInfo,
-            'voucher' => $order->voucher,
-        ]);
+    if (!$order) {
+        return response()->json(['message' => 'Order not found'], 404);
     }
-    public function cancelOrder(Request $request, $id)
-    {
-        $user = $request->user();
-        $order = Order::with('status')
-            ->where('user_id', $user->id)
-            ->find($id);
 
-        if (!$order) {
-            return response()->json(['message' => 'Order not found'], 404);
-        }
-
-        if ($order->status->name !== 'Pending') {
-            return response()->json(['message' => 'Only pending orders can be cancelled'], 400);
-        }
-
-        // Tìm status_id của trạng thái "Cancel"
-        $cancelStatus = \App\Models\Status::where('name', 'Cancel')->first();
-        if (!$cancelStatus) {
-            return response()->json(['message' => 'Cancel status not found'], 500);
-        }
-
-        $order->status_id = $cancelStatus->id;
-        $order->save();
-
-        // Lấy lại chi tiết đơn hàng sau khi cập nhật
-        $order->load([
-            'status',
-            'orderDetails.product',
-            'deliveryInfo',
-            'paymentInfo',
-            'voucher'
-        ]);
-
-        $total = $order->orderDetails->sum(function ($item) {
-            return $item->price * $item->quantity;
-        });
-
-        return response()->json([
-            'id' => $order->id,
-            'order_date' => $order->order_date,
-            'status' => $order->status->name,
-            'total' => $total,
-            'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
-            'final_total' => $order->paymentInfo->amount ?? $total,
-            'products' => $order->orderDetails->map(function ($item) {
-                return [
-                    'name' => $item->product->name,
-                    'quantity' => $item->quantity,
-                    'price' => $item->price,
-                ];
-            }),
-            'delivery_info' => $order->deliveryInfo,
-            'payment_info' => $order->paymentInfo,
-            'voucher' => $order->voucher,
-        ]);
+    if ($order->status->name !== 'Pending') {
+        return response()->json(['message' => 'Only pending orders can be cancelled'], 400);
     }
+
+    $cancelStatus = \App\Models\Status::where('name', 'Cancel')->first();
+    if (!$cancelStatus) {
+        return response()->json(['message' => 'Cancel status not found'], 500);
+    }
+
+    $order->status_id = $cancelStatus->id;
+    $order->save();
+
+    $order->load([
+        'status',
+        'order_details.product', 
+        'delivery_info',
+        'payment_info',
+        'voucher'
+    ]);
+
+    $total = $order->order_details->sum(function ($item) { 
+        return $item->price * $item->quantity;
+    });
+
+    return response()->json([
+        'id' => $order->id,
+        'order_date' => $order->order_date,
+        'status' => $order->status->name,
+        'total' => $total,
+        'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
+        'final_total' => $order->payment_info->amount ?? $total,
+        'products' => $order->order_details->map(function ($item) { 
+            return [
+                'name' => $item->product->name,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+            ];
+        }),
+        'delivery_info' => $order->delivery_info,
+        'payment_info' => $order->payment_info,
+        'voucher' => $order->voucher,
+    ]);
+}
 }

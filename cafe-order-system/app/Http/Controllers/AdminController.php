@@ -282,7 +282,7 @@ class AdminController extends Controller
             'status',
             'order_details.product',
             'deliveryInfo',
-            'paymentInfo',
+            'paymentInfo.payment_method',
             'voucher'
         ])->find($id);
 
@@ -302,6 +302,7 @@ class AdminController extends Controller
             'total' => $total,
             'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
             'final_total' => $order->paymentInfo->amount ?? $total,
+            'payment_method' => $order->paymentInfo->payment_method->name ?? null,
             'products' => $order->order_details->map(function ($item) {
                 return [
                     'name' => $item->product->name,
