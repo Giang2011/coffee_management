@@ -22,7 +22,7 @@ Kiểm tra và lấy thông tin chi tiết của một mã voucher.
 
 ### Request
 - Method: `GET`
-- URL: `/api/voucher`
+- URL: `/api/vouchers`
 - Query Parameters:
     - `code` (string, required): Mã voucher cần kiểm tra.  
       Ví dụ: `/api/voucher?code=DISCOUNT10`
