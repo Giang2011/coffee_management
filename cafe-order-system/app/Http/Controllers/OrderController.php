@@ -29,6 +29,9 @@ class OrderController extends Controller
     // Lấy địa chỉ mặc định (kể cả khi null)
     $defaultAddress = $request->input('address') ?? $user->address;
 
+    // lấy số điện thoại mặc định (kể cả khi null)
+    $defaultPhoneNumber = $request->input('phone_number') ?? $user->phone_number;
+
     // Lấy các phương thức thanh toán
     $paymentMethods = PaymentMethod::all();
 
@@ -40,16 +43,15 @@ class OrderController extends Controller
     // Kiểm tra voucher (nếu có)
     $voucherCode = $request->input('voucher_code');
     $discount = 0;
+    $voucher = null;
     if ($voucherCode) {
-        
         $voucher = Voucher::where('code', $voucherCode)->first();
-
         if ($voucher) {
             $currentDate = now();
             if ($currentDate->lt($voucher->start_date) || $currentDate->gt($voucher->end_date)) {
-                $discount = 0; // Voucher không hợp lệ
-            }
-            else{
+                $discount = 0;
+                $voucher = null; // Không hợp lệ thì không trả về voucher
+            } else {
                 $discount = $totalCost * ($voucher->discount_percent / 100);
                 $totalCost -= $discount;
             }
@@ -62,6 +64,8 @@ class OrderController extends Controller
         'payment_methods' => $paymentMethods,
         'total_cost' => $totalCost,
         'discount' => $discount,
+        'voucher' => $voucher, // Trả về luôn object voucher (có id)
+        'default_phone_number' => $defaultPhoneNumber, // Trả về số điện thoại mặc định
     ]);
 }
 
