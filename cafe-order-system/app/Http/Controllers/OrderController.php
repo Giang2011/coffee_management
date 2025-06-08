@@ -35,6 +35,8 @@ class OrderController extends Controller
     // Lấy các phương thức thanh toán
     $paymentMethods = PaymentMethod::all();
 
+    $voucher = $request->input('voucher');
+
     $totalCost = $request->input('total_cost');
 
     return response()->json([
@@ -43,6 +45,7 @@ class OrderController extends Controller
         'payment_methods' => $paymentMethods,
         'total_cost' => $totalCost,
         'default_phone_number' => $defaultPhoneNumber, // Trả về số điện thoại mặc định
+        'voucher' => $voucher,
     ]);
 }
 
@@ -99,6 +102,7 @@ class OrderController extends Controller
             'message' => 'Order placed successfully',
             'order' => $order,
             'total_cost' => $validated['total_cost'],
+            'voucher' => $validated['voucher'] ?? null,
         ]);
     }
 
