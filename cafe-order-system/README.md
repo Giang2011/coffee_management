@@ -1,5 +1,12 @@
 # Hệ Thống Quản Lý Đặt Hàng Cafe - API Routes
+raw sql cần viết
+INSERT INTO statuses VALUES (1,'Pending',now(), now());
+INSERT INTO statuses VALUES (2,'In Transit',now(), now());
+INSERT INTO statuses VALUES (3,'Delivered',now(), now());
+INSERT INTO statuses VALUES (4,'Cancel',now(), now());
 
+INSERT INTO payment_methods VALUES (1,'Cash',now(), now());
+INSERT INTO payment_methods VALUES (2,'Card',now(), now());
 
 ## **1. Route Công Khai (Public Routes)**
 
