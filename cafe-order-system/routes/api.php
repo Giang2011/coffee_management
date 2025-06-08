@@ -14,6 +14,7 @@ Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
 Route::get('/products', [ProductController::class, 'index']); // Lấy danh sách sản phẩm
 Route::get('/products/{id}', [ProductController::class, 'show']); // Lấy chi tiết sản phẩm
+Route::get('/categories', [ProductController::class, 'listCategories']); // Lấy danh sách danh mục sản phẩm
 Route::get('/products/search/{name}', [ProductController::class, 'search']); // Tìm kiếm sản phẩm theo tên
 Route::post('/recover-account', [UserController::class, 'recoverAccount']); // Khôi phục tài khoản qua câu hỏi bảo mật
 Route::post('/recover-account2', [UserController::class, 'recover']); // Khôi phục tài khoản qua câu hỏi bảo mật
@@ -30,6 +31,9 @@ Route::middleware(['auth:sanctum','role:user'])->group(function () { // route c�
     Route::delete('/cart/{id}', [CartController::class, 'destroy']); // Xóa sản phẩm khỏi giỏ hàng
     Route::post('/checkout', [OrderController::class, 'checkout']); // Bước 1: Hiển thị thông tin giỏ hàng
     Route::post('/order', [OrderController::class, 'placeOrder']); // Bước 2: Xử lý đặt hàng
+    Route::get('/orders', [OrderController::class, 'listOrders']); // Danh sách đơn hàng của người dùng
+    Route::put('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']); // Hủy đơn hàng
+    Route::get('/orders/{id}', [OrderController::class, 'getOrderDetails']); // Chi tiết đơn hàng của người dùng
 });
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () { // route của admin
@@ -52,6 +56,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () { // route 
 
     // Quản lý đơn hàng
     Route::get('/admin/orders', [AdminController::class, 'listOrders']); // Danh sách đơn hàng
+    Route::get('/admin/orders/{id}', [AdminController::class, 'getOrderDetails']); // Chi tiết đơn hàng
     Route::put('/admin/orders/{id}/status', [AdminController::class, 'updateOrderStatus']); // Cập nhật trạng thái đơn hàng
 
     // Quản lý người dùng

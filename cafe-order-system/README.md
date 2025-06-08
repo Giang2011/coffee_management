@@ -8,6 +8,200 @@
 - INSERT INTO payment_methods VALUES (1,'Cash',now(), now());
 - INSERT INTO payment_methods VALUES (2,'Card',now(), now());
 
+# API Documentation
+
+## 1. `GET /categories`
+**Mô tả:**  
+Lấy danh sách tất cả các danh mục sản phẩm (kể cả những danh mục chưa có sản phẩm).
+
+**Request:**  
+- Method: `GET`
+- URL: `/categories`
+
+**Response:**
+- 200 OK:  
+  ```json
+  [
+    {
+      "id": 1,
+      "name": "Cà phê",
+      "created_at": "...",
+      "updated_at": "..."
+    },
+    ...
+  ]
+  ```
+- 404 Not Found:  
+  ```json
+  { "message": "No categories found" }
+  ```
+
+---
+
+## 2. `GET /orders`
+**Mô tả:**  
+Lấy danh sách tất cả đơn hàng của người dùng hiện tại, bao gồm trạng thái và tổng giá trị từng đơn.
+
+**Request:**  
+- Method: `GET`
+- URL: `/orders`
+- Yêu cầu đăng nhập (Bearer Token hoặc Sanctum)
+
+**Response:**
+- 200 OK:  
+  ```json
+  [
+    {
+      "id": 1,
+      "order_date": "2024-06-08",
+      "status": "Pending",
+      "total": 120000
+    },
+    ...
+  ]
+  ```
+
+---
+
+## 3. `GET /orders/{id}`
+**Mô tả:**  
+Lấy chi tiết đầy đủ của một đơn hàng của người dùng hiện tại.
+
+**Request:**  
+- Method: `GET`
+- URL: `/orders/{id}`
+- Yêu cầu đăng nhập (Bearer Token hoặc Sanctum)
+
+**Response:**
+- 200 OK:  
+  ```json
+  {
+    "id": 1,
+    "order_date": "2024-06-08",
+    "status": "Pending",
+    "total": 120000,
+    "discount": 10000,
+    "final_total": 110000,
+    "products": [
+      {
+        "name": "Cà phê sữa",
+        "quantity": 2,
+        "price": 30000
+      }
+    ],
+    "delivery_info": { ... },
+    "payment_info": { ... },
+    "voucher": { ... }
+  }
+  ```
+- 404 Not Found:  
+  ```json
+  { "message": "Order not found" }
+  ```
+
+---
+
+## 4. `GET /admin/orders/{id}`
+**Mô tả:**  
+Lấy chi tiết đầy đủ của một đơn hàng bất kỳ (dành cho admin).
+
+**Request:**  
+- Method: `GET`
+- URL: `/admin/orders/{id}`
+- Yêu cầu đăng nhập với quyền admin
+
+**Response:**
+- 200 OK:  
+  ```json
+  {
+    "id": 1,
+    "order_date": "2024-06-08",
+    "status": "Pending",
+    "user": { ... },
+    "total": 120000,
+    "discount": 10000,
+    "final_total": 110000,
+    "products": [
+      {
+        "name": "Cà phê sữa",
+        "quantity": 2,
+        "price": 30000
+      }
+    ],
+    "delivery_info": { ... },
+    "payment_info": { ... },
+    "voucher": { ... }
+  }
+  ```
+- 404 Not Found:  
+  ```json
+  { "message": "Order not found" }
+  ```
+
+## Hủy đơn hàng (Cancel Order)
+
+### Endpoint
+```
+PUT /orders/{id}/cancel
+```
+
+### Mô tả
+Cho phép người dùng hủy đơn hàng của mình **nếu đơn hàng đang ở trạng thái "Pending"**. Khi hủy thành công, trạng thái đơn hàng sẽ chuyển thành "Cancel" và trả về toàn bộ thông tin chi tiết của đơn hàng đó.
+
+### Yêu cầu
+- Người dùng phải đăng nhập (middleware: `auth:sanctum`, role: `user`)
+- Chỉ hủy được đơn hàng của chính mình
+- Chỉ hủy được đơn hàng có trạng thái "Pending"
+
+### Request
+- Method: `PUT`
+- URL: `/orders/{id}/cancel`
+- Headers:  
+  `Authorization: Bearer {token}`
+
+### Response
+
+#### Thành công (200 OK)
+```json
+{
+  "id": 1,
+  "order_date": "2024-06-08",
+  "status": "Cancel",
+  "total": 120000,
+  "discount": 10000,
+  "final_total": 110000,
+  "products": [
+    {
+      "name": "Cà phê sữa",
+      "quantity": 2,
+      "price": 30000
+    }
+  ],
+  "delivery_info": { ... },
+  "payment_info": { ... },
+  "voucher": { ... }
+}
+```
+
+#### Lỗi: Không tìm thấy đơn hàng (404)
+```json
+{ "message": "Order not found" }
+```
+
+#### Lỗi: Đơn hàng không ở trạng thái Pending (400)
+```json
+{ "message": "Only pending orders can be cancelled" }
+```
+
+#### Lỗi: Không tìm thấy trạng thái Cancel (500)
+```json
+{ "message": "Cancel status not found" }
+```
+
+### Ghi chú
+- Sau khi hủy, đơn hàng vẫn được giữ lại trong hệ thống với trạng thái "Cancel".
+- Các thông tin trả về giống như khi xem chi tiết đơn hàng.
+
 ## **1. Route Công Khai (Public Routes)**
 
 ### Đăng ký tài khoản

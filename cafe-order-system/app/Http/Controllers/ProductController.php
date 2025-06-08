@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Models\Product;
 
@@ -37,4 +38,15 @@ class ProductController extends Controller
 
         return response()->json($products);
     }
+    
+    public function listCategories()
+{
+    $categories = Category::all();
+
+    if ($categories->isEmpty()) {
+        return response()->json(['message' => 'No categories found'], 404);
+    }
+
+    return response()->json($categories);
+}
 }

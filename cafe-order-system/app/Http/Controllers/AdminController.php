@@ -40,7 +40,7 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'stock_quantity' => 'nullable|integer|min:0',
+            'stock_quantity' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Validate ảnh
         ]);
@@ -274,5 +274,44 @@ class AdminController extends Controller
         }
 
         return response()->json($user);
+    }
+    public function getOrderDetails($id)
+    {
+        $order = Order::with([
+            'user',
+            'status',
+            'order_details.product',
+            'deliveryInfo',
+            'paymentInfo',
+            'voucher'
+        ])->find($id);
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        $total = $order->order_details->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
+
+        return response()->json([
+            'id' => $order->id,
+            'order_date' => $order->order_date,
+            'status' => $order->status->name,
+            'user' => $order->user,
+            'total' => $total,
+            'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
+            'final_total' => $order->paymentInfo->amount ?? $total,
+            'products' => $order->order_details->map(function ($item) {
+                return [
+                    'name' => $item->product->name,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                ];
+            }),
+            'delivery_info' => $order->deliveryInfo,
+            'payment_info' => $order->paymentInfo,
+            'voucher' => $order->voucher,
+        ]);
     }
 }
