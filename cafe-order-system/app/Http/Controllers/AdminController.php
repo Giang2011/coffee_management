@@ -217,6 +217,24 @@ class AdminController extends Controller
         return response()->json(['message' => 'Voucher updated successfully', 'voucher' => $voucher]);
     }
 
+    public function deleteVoucher($id)
+    {
+        $voucher = Voucher::find($id);
+
+        if (!$voucher) {
+            return response()->json(['message' => 'Voucher not found'], 404);
+        }
+
+        // Kiểm tra nếu voucher đã được sử dụng
+        if ($voucher->orders()->exists()) {
+            return response()->json(['message' => 'Cannot delete voucher that has been used'], 400);
+        }
+
+        $voucher->delete();
+
+        return response()->json(['message' => 'Voucher deleted successfully']);
+    }
+
     public function listOrders()
     {
         $orders = Order::with(['user', 'order_details.product', 'voucher'])->get();

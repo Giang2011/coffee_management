@@ -54,6 +54,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () { // route 
     Route::get('/admin/vouchers', [AdminController::class, 'listVouchers']); // Danh sách mã giảm giá
     Route::post('/admin/vouchers/create', [AdminController::class, 'createVoucher']); // Thêm mã giảm giá
     Route::put('/admin/vouchers/{id}/edit', [AdminController::class, 'updateVoucher']); // Sửa mã giảm giá
+    Route::delete('/admin/vouchers/{id}', [AdminController::class, 'deleteVoucher']); // Xóa mã giảm giá
 
     // Quản lý đơn hàng
     Route::get('/admin/orders', [AdminController::class, 'listOrders']); // Danh sách đơn hàng
