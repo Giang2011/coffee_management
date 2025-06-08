@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminController;
 // Route::middleware('auth:sanctum')->get('/test', [UserController::class, 'test']);
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
+Route::get('/voucher', [ProductController::class, 'getVoucher']); // Lấy mã giảm giá
 Route::get('/products', [ProductController::class, 'index']); // Lấy danh sách sản phẩm
 Route::get('/products/{id}', [ProductController::class, 'show']); // Lấy chi tiết sản phẩm
 Route::get('/categories', [ProductController::class, 'listCategories']); // Lấy danh sách danh mục sản phẩm

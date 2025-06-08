@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\Voucher;
 
 class ProductController extends Controller
 {
@@ -49,4 +50,16 @@ class ProductController extends Controller
 
     return response()->json($categories);
 }
+
+    public function getVoucher(Request $request)
+    {
+        // Giả sử bạn có một model Voucher để lấy mã giảm giá
+        $vouchers = Voucher::all();
+
+        if ($vouchers->isEmpty()) {
+            return response()->json(['message' => 'No vouchers available'], 404);
+        }
+
+        return response()->json($vouchers);
+    }
 }

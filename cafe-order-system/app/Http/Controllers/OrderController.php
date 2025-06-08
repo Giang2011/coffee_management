@@ -35,36 +35,13 @@ class OrderController extends Controller
     // Lấy các phương thức thanh toán
     $paymentMethods = PaymentMethod::all();
 
-    // Tính tổng giá tiền gốc
-    $totalCost = $cartItems->sum(function ($item) {
-        return $item->product->price * $item->quantity;
-    });
-
-    // Kiểm tra voucher (nếu có)
-    $voucherCode = $request->input('voucher_code');
-    $discount = 0;
-    $voucher = null;
-    if ($voucherCode) {
-        $voucher = Voucher::where('code', $voucherCode)->first();
-        if ($voucher) {
-            $currentDate = now();
-            if ($currentDate->lt($voucher->start_date) || $currentDate->gt($voucher->end_date)) {
-                $discount = 0;
-                $voucher = null; // Không hợp lệ thì không trả về voucher
-            } else {
-                $discount = $totalCost * ($voucher->discount_percent / 100);
-                $totalCost -= $discount;
-            }
-        }
-    }
+    $totalCost = $request->input('total_cost');
 
     return response()->json([
         'cart_items' => $cartItems,
         'default_address' => $defaultAddress,
         'payment_methods' => $paymentMethods,
         'total_cost' => $totalCost,
-        'discount' => $discount,
-        'voucher' => $voucher, // Trả về luôn object voucher (có id)
         'default_phone_number' => $defaultPhoneNumber, // Trả về số điện thoại mặc định
     ]);
 }
@@ -80,7 +57,8 @@ class OrderController extends Controller
             'delivery_info.recipient_name' => 'required|string|max:255',
             'delivery_info.phone_number' => 'required|string|max:15',
             'delivery_info.address' => 'required|string|max:255',
-            'voucher_id' => 'nullable|exists:vouchers,id', // ID voucher đã áp dụng (nếu có)
+            'voucher' => 'nullable|string|max:255',
+            'total_cost' => 'required|numeric|min:0',
         ]);
 
         // Lấy giỏ hàng
@@ -98,38 +76,6 @@ class OrderController extends Controller
             'voucher_id' => $validated['voucher_id'] ?? null, // Lưu voucher nếu có
         ]);
 
-        // Tạo chi tiết đơn hàng và tính tổng tiền
-        $totalCost = 0;
-        foreach ($cartItems as $item) {
-            $itemCost = $item->product->price * $item->quantity;
-            $totalCost += $itemCost;
-
-            OrderDetails::create([
-                'order_id' => $order->id,
-                'product_id' => $item->product_id,
-                'quantity' => $item->quantity,
-                'price' => $item->product->price,
-            ]);
-        }
-
-        // Áp dụng voucher (nếu có)
-        $discount = 0;
-        if ($validated['voucher_id']) {
-            $voucher = Voucher::find($validated['voucher_id']);
-            if ($voucher) {
-                $discount = $totalCost * ($voucher->discount_percent / 100);
-
-                // Lưu thông tin sử dụng voucher vào bảng voucher_usages
-                VoucherUsage::create([
-                    'voucher_id' => $voucher->id,
-                    'user_id' => $user->id,
-                ]);
-            }
-        }
-
-        // Tính tổng tiền cuối cùng sau khi áp dụng voucher
-        $finalTotal = $totalCost - $discount;
-
         // Tạo thông tin giao hàng
         DeliveryInfo::create([
             'order_id' => $order->id,
@@ -142,7 +88,7 @@ class OrderController extends Controller
         PaymentInfo::create([
             'order_id' => $order->id,
             'payment_method_id' => $validated['payment_method_id'],
-            'amount' => $finalTotal,
+            'amount' => $validated['total_cost'],
             'payment_date' => now(),
         ]);
 
@@ -152,9 +98,7 @@ class OrderController extends Controller
         return response()->json([
             'message' => 'Order placed successfully',
             'order' => $order,
-            'total_cost' => $totalCost,
-            'discount' => $discount,
-            'final_total' => $finalTotal,
+            'total_cost' => $validated['total_cost'],
         ]);
     }
 
