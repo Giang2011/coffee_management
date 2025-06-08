@@ -155,27 +155,27 @@ class OrderController extends Controller
     }
 
     public function listOrders(Request $request)
-    {
-        $user = $request->user();
-        $orders = Order::with(['status', 'orderDetails', 'orderDetails.product'])
-            ->where('user_id', $user->id)
-            ->orderBy('order_date', 'desc')
-            ->get();
+{
+    $user = $request->user();
+    $orders = Order::with(['status', 'order_details', 'order_details.product']) 
+        ->where('user_id', $user->id)
+        ->orderBy('order_date', 'desc')
+        ->get();
 
-        $result = $orders->map(function ($order) {
-            $total = $order->orderDetails->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-            return [
-                'id' => $order->id,
-                'order_date' => $order->order_date,
-                'status' => $order->status->name,
-                'total' => $total,
-            ];
+    $result = $orders->map(function ($order) {
+        $total = $order->order_details->sum(function ($item) { 
+            return $item->price * $item->quantity;
         });
+        return [
+            'id' => $order->id,
+            'order_date' => $order->order_date,
+            'status' => $order->status->name,
+            'total' => $total,
+        ];
+    });
 
-        return response()->json($result);
-    }
+    return response()->json($result);
+}
 
     public function getOrderDetails(Request $request, $id)
     {
