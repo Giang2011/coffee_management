@@ -10,6 +10,249 @@
 
 # API Documentation
 
+## 1. Lấy thông tin Voucher
+
+### Endpoint
+```
+GET /api/voucher
+```
+
+### Mô tả
+Kiểm tra và lấy thông tin chi tiết của một mã voucher.
+
+### Request
+- Method: `GET`
+- URL: `/api/voucher`
+- Query Parameters:
+    - `code` (string, required): Mã voucher cần kiểm tra.  
+      Ví dụ: `/api/voucher?code=DISCOUNT10`
+
+### Response
+
+#### Thành công (200 OK)
+Trả về thông tin chi tiết của voucher nếu mã hợp lệ và còn hiệu lực.
+```json
+{
+  "id": 1,
+  "code": "DISCOUNT10",
+  "discount_percent": 10,
+  "start_date": "2025-06-01",
+  "end_date": "2025-06-30",
+  "max_usage": 100,
+  "created_at": "...",
+  "updated_at": "..."
+}
+```
+
+#### Lỗi: Không tìm thấy voucher (404 Not Found)
+```json
+{
+  "message": "Voucher not found"
+}
+```
+
+#### Lỗi: Voucher không hợp lệ hoặc hết hạn
+(Tùy theo logic xử lý, có thể trả về 400 Bad Request hoặc 404 Not Found với message cụ thể)
+```json
+{
+  "message": "Voucher is invalid or expired"
+}
+```
+---
+
+## 2. Lấy thông tin Checkout
+
+### Endpoint
+```
+POST /api/checkout
+```
+
+### Mô tả
+Lấy thông tin cần thiết để hiển thị trang checkout, bao gồm các sản phẩm trong giỏ hàng, địa chỉ/SĐT mặc định, các phương thức thanh toán, và tính toán tổng tiền sau khi áp dụng voucher (nếu có).
+
+### Yêu cầu
+- Người dùng phải đăng nhập (middleware: `auth:sanctum`).
+
+### Request
+- Method: `POST`
+- URL: `/api/checkout`
+- Headers:
+    - `Authorization: Bearer {token}`
+    - `Content-Type: application/json`
+- Body (JSON):
+    - `address` (string, optional): Địa chỉ giao hàng mới (nếu người dùng muốn thay đổi địa chỉ mặc định).
+    - `phone_number` (string, optional): Số điện thoại mới (nếu người dùng muốn thay đổi SĐT mặc định).
+    - `voucher` (string, optional): Mã voucher người dùng nhập vào.
+    - `total_cost` (numeric, required): Tổng giá trị các sản phẩm trong giỏ hàng (trước khi áp dụng voucher).
+
+**Ví dụ Request Body:**
+```json
+{
+  "address": "123 Đường Mới, Quận Bình Thạnh, TP.HCM",
+  "phone_number": "0909xxxxxx",
+  "voucher": "SUMMERDEAL",
+  "total_cost": 250000
+}
+```
+Hoặc nếu không override địa chỉ/SĐT và không có voucher:
+```json
+{
+  "total_cost": 250000
+}
+```
+
+### Response
+
+#### Thành công (200 OK)
+```json
+{
+  "cart_items": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "product_id": 10,
+      "quantity": 2,
+      "created_at": "...",
+      "updated_at": "...",
+      "product": {
+        "id": 10,
+        "name": "Cà Phê Đen",
+        "price": "25000.00",
+        // ... other product details
+      }
+    }
+    // ... other cart items
+  ],
+  "default_address": "123 Đường Mới, Quận Bình Thạnh, TP.HCM", // Địa chỉ được sử dụng
+  "default_phone_number": "0909xxxxxx", // SĐT được sử dụng
+  "payment_methods": [
+    { "id": 1, "name": "Thanh toán khi nhận hàng" },
+    { "id": 2, "name": "Chuyển khoản ngân hàng" }
+    // ... other payment methods
+  ],
+  "total_cost": 225000, // Tổng tiền cuối cùng sau khi áp dụng voucher (nếu có)
+  "discount": 25000, // Số tiền được giảm (nếu có voucher hợp lệ)
+  "voucher": { // Thông tin voucher đã áp dụng, hoặc null nếu không có/không hợp lệ
+    "id": 5,
+    "code": "SUMMERDEAL",
+    "discount_percent": 10,
+    // ... other voucher details
+  }
+}
+```
+
+#### Lỗi: Giỏ hàng trống (400 Bad Request)
+```json
+{
+  "message": "Cart is empty"
+}
+```
+
+#### Lỗi: Voucher không hợp lệ
+(Nếu voucher được gửi lên không hợp lệ, `discount` sẽ là 0 và `voucher` sẽ là `null` hoặc thông tin voucher không hợp lệ tùy theo logic xử lý)
+
+---
+
+## 3. Đặt hàng (Place Order)
+
+### Endpoint
+```
+POST /api/orders
+```
+
+### Mô tả
+Tạo một đơn hàng mới dựa trên thông tin từ giỏ hàng và các thông tin người dùng cung cấp (địa chỉ giao hàng, phương thức thanh toán, voucher).
+
+### Yêu cầu
+- Người dùng phải đăng nhập (middleware: `auth:sanctum`).
+
+### Request
+- Method: `POST`
+- URL: `/api/orders`
+- Headers:
+    - `Authorization: Bearer {token}`
+    - `Content-Type: application/json`
+- Body (JSON):
+    - `payment_method_id` (integer, required): ID của phương thức thanh toán.
+    - `delivery_info` (object, required): Thông tin giao hàng.
+        - `recipient_name` (string, required): Tên người nhận.
+        - `phone_number` (string, required): Số điện thoại người nhận.
+        - `address` (string, required): Địa chỉ giao hàng.
+    - `voucher_id` (integer, optional): ID của voucher đã được xác nhận từ API Checkout (nếu có).
+    - `total_cost` (numeric, required): Tổng số tiền cuối cùng của đơn hàng (sau khi đã áp dụng voucher).
+
+**Ví dụ Request Body (có voucher):**
+```json
+{
+  "payment_method_id": 1,
+  "delivery_info": {
+    "recipient_name": "Trần Văn B",
+    "phone_number": "0987654321",
+    "address": "456 Đường XYZ, Quận 10, TP.HCM"
+  },
+  "voucher_id": 5,
+  "total_cost": 225000
+}
+```
+
+**Ví dụ Request Body (không có voucher):**
+```json
+{
+  "payment_method_id": 1,
+  "delivery_info": {
+    "recipient_name": "Trần Văn B",
+    "phone_number": "0987654321",
+    "address": "456 Đường XYZ, Quận 10, TP.HCM"
+  },
+  "total_cost": 250000
+}
+```
+
+### Response
+
+#### Thành công (200 OK hoặc 201 Created)
+```json
+{
+  "message": "Order placed successfully",
+  "order": {
+    "user_id": 1,
+    "status_id": 1, // ID của trạng thái "Pending"
+    "order_date": "2025-06-09T10:00:00.000000Z",
+    "voucher_id": 5, // Hoặc null nếu không có
+    "updated_at": "2025-06-09T10:00:00.000000Z",
+    "created_at": "2025-06-09T10:00:00.000000Z",
+    "id": 101 // ID của đơn hàng vừa tạo
+  },
+  "total_cost": 225000,
+  "voucher": "SUMMERDEAL" // Mã voucher đã sử dụng, hoặc null
+}
+```
+
+#### Lỗi: Giỏ hàng trống (400 Bad Request)
+```json
+{
+  "message": "Cart is empty"
+}
+```
+
+#### Lỗi: Validate thông tin (422 Unprocessable Entity)
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "payment_method_id": [
+      "The payment method id field is required."
+    ],
+    "delivery_info.recipient_name": [
+      "The recipient name field is required."
+    ]
+    // ... other validation errors
+  }
+}
+```
+
+# API Documentation
+
 ## 1. `GET /categories`
 **Mô tả:**  
 Lấy danh sách tất cả các danh mục sản phẩm (kể cả những danh mục chưa có sản phẩm).
