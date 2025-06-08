@@ -14,7 +14,7 @@
 
 ### Endpoint
 ```
-GET /api/voucher
+GET /api/vouchers
 ```
 
 ### Mô tả
