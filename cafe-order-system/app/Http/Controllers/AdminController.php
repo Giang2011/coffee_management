@@ -237,23 +237,18 @@ class AdminController extends Controller
 
     public function listOrders()
     {
-        $orders = Order::with(['user', 'order_details.product', 'voucher'])->get();
+        $orders = Order::with(['user', 'order_details.product', 'voucher', 'payment_info'])->get();
 
         // Tính tổng giá tiền cho từng đơn hàng (bao gồm giảm giá từ voucher nếu có)
         $orders->each(function ($order) {
             // Tính tổng giá tiền gốc từ order_details
-            $totalCost = $order->order_details->sum(function ($detail) {
-                return $detail->price * $detail->quantity;
-            });
+            $totalCost = $order->payment_info->amount;
 
             // Áp dụng giảm giá từ voucher (nếu có)
             $discount = 0;
-            if ($order->voucher) {
-                $discount = $totalCost * ($order->voucher->discount_percent / 100);
-            }
 
             // Lưu tổng giá tiền sau khi áp dụng giảm giá
-            $order->total_cost = $totalCost - $discount;
+            $order->total_cost = $totalCost;
             $order->discount = $discount; // Thêm thông tin giảm giá vào response
         });
 
@@ -293,45 +288,44 @@ class AdminController extends Controller
 
         return response()->json($user);
     }
+    
      public function getOrderDetails(Request $request, $id)
-{
-    $user = $request->user();
-    $order = Order::with([
-        'status',
-        'order_details.product', 
-        'delivery_info',
-        'payment_info.payment_method',
-        'voucher'
-    ])
-    ->where('user_id', $user->id)
-    ->find($id);
+    {
+        $user = $request->user();
+        $order = Order::with([
+            'status',
+            'order_details.product', 
+            'delivery_info',
+            'payment_info.payment_method',
+            'voucher'
+        ])
+        ->where('user_id', $user->id)
+        ->find($id);
 
-    if (!$order) {
-        return response()->json(['message' => 'Order not found'], 404);
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        $total = $order->payment_info->amount;
+
+        return response()->json([
+            'id' => $order->id,
+            'order_date' => $order->order_date,
+            'status' => $order->status->name,
+            'total' => $total,
+            'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
+            'final_total' => $order->payment_info->amount ?? $total,
+            'payment_method' => $order->payment_info->payment_method->name ?? null,
+            'products' => $order->order_details->map(function ($item) { 
+                return [
+                    'name' => $item->product->name,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                ];
+            }),
+            'delivery_info' => $order->delivery_info,
+            'payment_info' => $order->payment_info,
+            'voucher' => $order->voucher,
+        ]);
     }
-
-    $total = $order->order_details->sum(function ($item) { 
-        return $item->price * $item->quantity;
-    });
-
-    return response()->json([
-        'id' => $order->id,
-        'order_date' => $order->order_date,
-        'status' => $order->status->name,
-        'total' => $total,
-        'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
-        'final_total' => $order->payment_info->amount ?? $total,
-        'payment_method' => $order->payment_info->payment_method->name ?? null,
-        'products' => $order->order_details->map(function ($item) { 
-            return [
-                'name' => $item->product->name,
-                'quantity' => $item->quantity,
-                'price' => $item->price,
-            ];
-        }),
-        'delivery_info' => $order->delivery_info,
-        'payment_info' => $order->payment_info,
-        'voucher' => $order->voucher,
-    ]);
-}
 }

@@ -79,6 +79,16 @@ class OrderController extends Controller
             'voucher_id' => $validated['voucher_id'] ?? null, // Lưu voucher nếu có
         ]);
 
+        // Thêm chi tiết đơn hàng cho từng sản phẩm trong giỏ hàng
+        foreach ($cartItems as $item) {
+            \App\Models\OrderDetails::create([
+                'order_id' => $order->id,
+                'product_id' => $item->product_id,
+                'quantity' => $item->quantity,
+                'price' => $item->product->price,
+            ]);
+        }
+
         // Tạo thông tin giao hàng
         DeliveryInfo::create([
             'order_id' => $order->id,
@@ -107,27 +117,24 @@ class OrderController extends Controller
     }
 
     public function listOrders(Request $request)
-{
-    $user = $request->user();
-    $orders = Order::with(['status', 'order_details', 'order_details.product']) 
-        ->where('user_id', $user->id)
-        ->orderBy('order_date', 'desc')
-        ->get();
+    {
+        $user = $request->user();
+        $orders = Order::with(['status', 'payment_info']) // thêm payment_info
+            ->where('user_id', $user->id)
+            ->orderBy('order_date', 'desc')
+            ->get();
 
-    $result = $orders->map(function ($order) {
-        $total = $order->order_details->sum(function ($item) { 
-            return $item->price * $item->quantity;
+        $result = $orders->map(function ($order) {
+            return [
+                'id' => $order->id,
+                'order_date' => $order->order_date,
+                'status' => $order->status->name,
+                'total' => $order->payment_info->amount ?? 0, // lấy từ payment_info
+            ];
         });
-        return [
-            'id' => $order->id,
-            'order_date' => $order->order_date,
-            'status' => $order->status->name,
-            'total' => $total,
-        ];
-    });
 
-    return response()->json($result);
-}
+        return response()->json($result);
+    }
 
     public function getOrderDetails(Request $request, $id)
 {
@@ -137,7 +144,6 @@ class OrderController extends Controller
         'order_details.product', 
         'delivery_info',
         'payment_info.payment_method',
-        'voucher'
     ])
     ->where('user_id', $user->id)
     ->find($id);
@@ -146,9 +152,7 @@ class OrderController extends Controller
         return response()->json(['message' => 'Order not found'], 404);
     }
 
-    $total = $order->order_details->sum(function ($item) { 
-        return $item->price * $item->quantity;
-    });
+    $total = $order->payment_info->amount;
 
     return response()->json([
         'id' => $order->id,
@@ -167,64 +171,59 @@ class OrderController extends Controller
         }),
         'delivery_info' => $order->delivery_info,
         'payment_info' => $order->payment_info,
-        'voucher' => $order->voucher,
     ]);
 }
 
 
     
     public function cancelOrder(Request $request, $id)
-{
-    $user = $request->user();
-    $order = Order::with('status')
-        ->where('user_id', $user->id)
-        ->find($id);
+    {
+        $user = $request->user();
+        $order = Order::with('status')
+            ->where('user_id', $user->id)
+            ->find($id);
 
-    if (!$order) {
-        return response()->json(['message' => 'Order not found'], 404);
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        if ($order->status->name !== 'Pending') {
+            return response()->json(['message' => 'Only pending orders can be cancelled'], 400);
+        }
+
+        $cancelStatus = \App\Models\Status::where('name', 'Cancel')->first();
+        if (!$cancelStatus) {
+            return response()->json(['message' => 'Cancel status not found'], 500);
+        }
+
+        $order->status_id = $cancelStatus->id;
+        $order->save();
+
+        $order->load([
+            'status',
+            'order_details.product', 
+            'delivery_info',
+            'payment_info',
+        ]);
+
+        $total = $order->payment_info->amount;
+
+        return response()->json([
+            'id' => $order->id,
+            'order_date' => $order->order_date,
+            'status' => $order->status->name,
+            'total' => $total,
+            'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
+            'final_total' => $order->payment_info->amount ?? $total,
+            'products' => $order->order_details->map(function ($item) { 
+                return [
+                    'name' => $item->product->name,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                ];
+            }),
+            'delivery_info' => $order->delivery_info,
+            'payment_info' => $order->payment_info,
+        ]);
     }
-
-    if ($order->status->name !== 'Pending') {
-        return response()->json(['message' => 'Only pending orders can be cancelled'], 400);
-    }
-
-    $cancelStatus = \App\Models\Status::where('name', 'Cancel')->first();
-    if (!$cancelStatus) {
-        return response()->json(['message' => 'Cancel status not found'], 500);
-    }
-
-    $order->status_id = $cancelStatus->id;
-    $order->save();
-
-    $order->load([
-        'status',
-        'order_details.product', 
-        'delivery_info',
-        'payment_info',
-        'voucher'
-    ]);
-
-    $total = $order->order_details->sum(function ($item) { 
-        return $item->price * $item->quantity;
-    });
-
-    return response()->json([
-        'id' => $order->id,
-        'order_date' => $order->order_date,
-        'status' => $order->status->name,
-        'total' => $total,
-        'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
-        'final_total' => $order->payment_info->amount ?? $total,
-        'products' => $order->order_details->map(function ($item) { 
-            return [
-                'name' => $item->product->name,
-                'quantity' => $item->quantity,
-                'price' => $item->price,
-            ];
-        }),
-        'delivery_info' => $order->delivery_info,
-        'payment_info' => $order->payment_info,
-        'voucher' => $order->voucher,
-    ]);
-}
 }
