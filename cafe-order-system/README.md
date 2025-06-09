@@ -251,6 +251,8 @@
         "message": "Order not found"
     }
     ```
+
+## END 
 ## Quản lý Đơn hàng (Order Management)
 
 ### User Routes
@@ -496,9 +498,6 @@
     ```
 
 
-
-
-# END
 # API Documentation
 
 ## 1. Lấy thông tin Voucher
