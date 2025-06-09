@@ -152,7 +152,7 @@ class OrderController extends Controller
         return response()->json(['message' => 'Order not found'], 404);
     }
 
-    $total = $order->payment_info->amount;
+    $total = $order->payment_info->amount ?? 0;
 
     return response()->json([
         'id' => $order->id,
