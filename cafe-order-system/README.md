@@ -10,6 +10,8 @@
 
 ## Quản lý Đơn hàng (Order Management)
 
+# mấy cái dưới này có 1 vài cái có trả về voucher, không dùng nhé, tại hôm trc thống nhất áp dụng voucher check ở checkout rồi, t cũng không lưu mã voucher đấy vào lịch sử order nữa
+
 ### User Routes
 
 #### 1. Lấy danh sách đơn hàng của người dùng
