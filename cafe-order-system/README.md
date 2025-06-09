@@ -8,6 +8,40 @@
 - INSERT INTO payment_methods VALUES (1,'Cash',now(), now());
 - INSERT INTO payment_methods VALUES (2,'Card',now(), now());
 
+## Recover Account (Get Security Question)
+
+Retrieves the security question for a user to initiate the account recovery process.
+
+*   **URL:** `/api/recover-account/{email}`
+*   **Method:** `GET`
+*   **URL Params:**
+    *   `email=[string]` (Required) - The email address of the user.
+*   **Success Response:**
+    *   **Code:** 200 OK
+    *   **Content:**
+        ```json
+        {
+            "Câu hỏi bảo mật": "Your security question?"
+        }
+        ```
+*   **Error Responses:**
+    *   **Code:** 400 Bad Request
+        *   **Content (if email is missing):**
+            ```json
+            {
+                "message": "Thiếu email"
+            }
+            ```
+    *   **Code:** 404 Not Found
+        *   **Content (if email does not exist):**
+            ```json
+            {
+                "message": "Email không tồn tại"
+            }
+            ```
+*   **Notes:**
+    *   This endpoint is the first step in the account recovery process. After obtaining the security question, the user should proceed to answer it via the `/api/recover-account2` endpoint.
+
 ## Quản lý Đơn hàng (Order Management)
 
 # mấy cái dưới này có 1 vài cái có trả về voucher, không dùng nhé, tại hôm trc thống nhất áp dụng voucher check ở checkout rồi, t cũng không lưu mã voucher đấy vào lịch sử order nữa

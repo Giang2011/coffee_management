@@ -59,18 +59,19 @@ class UserController extends Controller
 
     public function recoverAccount(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-        ]);
+        $email = $request->route('email');
 
-        $user = User::where('email', $request->email)->first();
+        if (!$email) {
+            return response()->json(['message' => 'Thiếu email'], 400);
+        }
+
+        $user = User::where('email', $email)->first();
 
         if (!$user) {
             return response()->json(['message' => 'Email không tồn tại'], 404);
         }
 
-            return response()->json(['Câu hỏi bảo mật' => $user->security_question]);
-
+        return response()->json(['Câu hỏi bảo mật' => $user->security_question]);
     }
 
     public function recover(Request $request)
