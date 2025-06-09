@@ -291,22 +291,20 @@ class AdminController extends Controller
     
      public function getOrderDetails(Request $request, $id)
     {
-        $user = $request->user();
         $order = Order::with([
             'status',
             'order_details.product', 
             'delivery_info',
             'payment_info.payment_method',
             'voucher'
-        ])
-        ->where('user_id', $user->id)
-        ->find($id);
+        ])->find($id);
 
         if (!$order) {
             return response()->json(['message' => 'Order not found'], 404);
         }
 
-        $total = $order->payment_info->amount;
+        // Tránh lỗi nếu payment_info null
+        $total = $order->payment_info ? $order->payment_info->amount : 0;
 
         return response()->json([
             'id' => $order->id,
@@ -315,7 +313,7 @@ class AdminController extends Controller
             'total' => $total,
             'discount' => $order->voucher ? $order->voucher->discount_percent : 0,
             'final_total' => $order->payment_info->amount ?? $total,
-            'payment_method' => $order->payment_info->payment_method->name ?? null,
+            'payment_method' => $order->payment_info && $order->payment_info->payment_method ? $order->payment_info->payment_method->name : null,
             'products' => $order->order_details->map(function ($item) { 
                 return [
                     'name' => $item->product->name,
