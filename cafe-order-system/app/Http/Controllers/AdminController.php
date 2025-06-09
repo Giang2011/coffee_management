@@ -241,8 +241,8 @@ class AdminController extends Controller
 
         // Tính tổng giá tiền cho từng đơn hàng (bao gồm giảm giá từ voucher nếu có)
         $orders->each(function ($order) {
-            // Tính tổng giá tiền gốc từ order_details
-            $totalCost = $order->payment_info->amount;
+            // Kiểm tra payment_info có tồn tại không
+            $totalCost = $order->payment_info ? $order->payment_info->amount : 0;
 
             // Áp dụng giảm giá từ voucher (nếu có)
             $discount = 0;
