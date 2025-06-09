@@ -8,6 +8,497 @@
 - INSERT INTO payment_methods VALUES (1,'Cash',now(), now());
 - INSERT INTO payment_methods VALUES (2,'Card',now(), now());
 
+## Quản lý Đơn hàng (Order Management)
+
+### User Routes
+
+#### 1. Lấy danh sách đơn hàng của người dùng
+*   **Endpoint:** `GET /api/orders`
+*   **Middleware:** `auth:sanctum`, `role:user`
+*   **Controller:** `OrderController@listOrders`
+*   **Mô tả:** Trả về danh sách các đơn hàng đã đặt của người dùng đang đăng nhập. Mỗi đơn hàng bao gồm ID, ngày đặt, trạng thái và tổng tiền.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    [
+        {
+            "id": 1,
+            "order_date": "2025-06-09T10:00:00.000000Z",
+            "status": "Pending",
+            "total": 50000
+        },
+        {
+            "id": 2,
+            "order_date": "2025-06-08T15:30:00.000000Z",
+            "status": "Delivered",
+            "total": 75000
+        }
+    ]
+    ```
+
+#### 2. Lấy chi tiết đơn hàng của người dùng
+*   **Endpoint:** `GET /api/orders/{id}`
+*   **Middleware:** `auth:sanctum`, `role:user`
+*   **Controller:** `OrderController@getOrderDetails`
+*   **Mô tả:** Trả về thông tin chi tiết của một đơn hàng cụ thể (dựa vào `id`) của người dùng đang đăng nhập. Bao gồm trạng thái, chi tiết sản phẩm, thông tin giao hàng, thông tin thanh toán, và voucher (nếu có).
+*   **Path Parameters:**
+    *   `id` (integer, required): ID của đơn hàng.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    {
+        "id": 1,
+        "order_date": "2025-06-09T10:00:00.000000Z",
+        "status": "Pending",
+        "total": 50000,
+        "discount": 10, // Phần trăm giảm giá từ voucher
+        "final_total": 45000, // Tổng tiền sau khi áp dụng voucher
+        "payment_method": "Cash on Delivery",
+        "products": [
+            {
+                "name": "Cà phê sữa",
+                "quantity": 2,
+                "price": "25000.00"
+            }
+        ],
+        "delivery_info": {
+            "id": 1,
+            "order_id": 1,
+            "recipient_name": "Nguyen Van A",
+            "phone_number": "0123456789",
+            "address": "123 Đường ABC, Quận 1, TP.HCM",
+            "note": null,
+            // ...
+        },
+        "payment_info": {
+            "id": 1,
+            "order_id": 1,
+            "payment_method_id": 1,
+            "amount": "45000.00",
+            "payment_date": "2025-06-09T10:00:00.000000Z",
+            "payment_method": {
+                "id": 1,
+                "name": "Cash on Delivery",
+                // ...
+            }
+            // ...
+        },
+        "voucher": { // Có thể null nếu không áp dụng voucher
+            "id": 1,
+            "code": "SALE10",
+            "discount_percent": "10.00",
+            // ...
+        }
+    }
+    ```
+*   **Response (Error 404):**
+    ```json
+    {
+        "message": "Order not found"
+    }
+    ```
+
+#### 3. Hủy đơn hàng
+*   **Endpoint:** `PUT /api/orders/{id}/cancel`
+*   **Middleware:** `auth:sanctum`, `role:user`
+*   **Controller:** `OrderController@cancelOrder`
+*   **Mô tả:** Cho phép người dùng hủy một đơn hàng đang ở trạng thái "Pending".
+*   **Path Parameters:**
+    *   `id` (integer, required): ID của đơn hàng cần hủy.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    {
+        "id": 1,
+        "order_date": "2025-06-09T10:00:00.000000Z",
+        "status": "Cancel", // Trạng thái đã được cập nhật
+        "total": 50000,
+        "discount": 10,
+        "final_total": 45000,
+        "products": [
+            // ...
+        ],
+        "delivery_info": {
+            // ...
+        },
+        "payment_info": {
+            // ...
+        }
+    }
+    ```
+*   **Response (Error 400):**
+    ```json
+    {
+        "message": "Only pending orders can be cancelled"
+    }
+    ```
+*   **Response (Error 404):**
+    ```json
+    {
+        "message": "Order not found"
+    }
+    ```
+
+### Admin Routes
+
+#### 1. Lấy danh sách tất cả đơn hàng (Admin)
+*   **Endpoint:** `GET /api/admin/orders`
+*   **Middleware:** `auth:sanctum`, `role:admin`
+*   **Controller:** `AdminController@listOrders`
+*   **Mô tả:** Trả về danh sách tất cả đơn hàng trong hệ thống. Bao gồm thông tin người dùng, chi tiết sản phẩm, voucher, thông tin thanh toán, tổng tiền và % giảm giá.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    [
+        {
+            "id": 1,
+            "user_id": 2,
+            "order_date": "2025-06-09T10:00:00.000000Z",
+            "status_id": 1,
+            "voucher_id": 1,
+            // ... các trường khác của order
+            "user": {
+                "id": 2,
+                "full_name": "Nguyen Van A",
+                // ...
+            },
+            "order_details": [
+                {
+                    "id": 1,
+                    "order_id": 1,
+                    "product_id": 1,
+                    "quantity": 2,
+                    "price": "25000.00",
+                    "product": {
+                        "id": 1,
+                        "name": "Cà phê sữa",
+                        // ...
+                    }
+                }
+            ],
+            "voucher": { // Có thể null
+                "id": 1,
+                "code": "SALE10",
+                "discount_percent": "10.00",
+                // ...
+            },
+            "payment_info": {
+                "id": 1,
+                "order_id": 1,
+                "payment_method_id": 1,
+                "amount": "45000.00",
+                // ...
+            },
+            "total_cost": "45000.00", // Tổng tiền sau giảm giá
+            "discount": "10.00" // % giảm giá
+        },
+        // ... các đơn hàng khác
+    ]
+    ```
+
+#### 2. Lấy chi tiết đơn hàng (Admin)
+*   **Endpoint:** `GET /api/admin/orders/{id}`
+*   **Middleware:** `auth:sanctum`, `role:admin`
+*   **Controller:** `AdminController@getOrderDetails`
+*   **Mô tả:** Trả về thông tin chi tiết của một đơn hàng cụ thể (dựa vào `id`) cho admin. Bao gồm trạng thái, chi tiết sản phẩm, thông tin giao hàng, thông tin thanh toán, và voucher (nếu có).
+*   **Path Parameters:**
+    *   `id` (integer, required): ID của đơn hàng.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    {
+        "id": 1,
+        "order_date": "2025-06-09T10:00:00.000000Z",
+        "status": "Pending",
+        "total": 50000,
+        "discount": 10, // Phần trăm giảm giá từ voucher
+        "final_total": 45000, // Tổng tiền sau khi áp dụng voucher
+        "payment_method": "Cash on Delivery",
+        "products": [
+            {
+                "name": "Cà phê sữa",
+                "quantity": 2,
+                "price": "25000.00"
+            }
+        ],
+        "delivery_info": {
+            "id": 1,
+            "order_id": 1,
+            "recipient_name": "Nguyen Van A",
+            // ...
+        },
+        "payment_info": {
+            "id": 1,
+            "order_id": 1,
+            "amount": "45000.00",
+            "payment_method": {
+                "id": 1,
+                "name": "Cash on Delivery",
+                // ...
+            }
+            // ...
+        },
+        "voucher": { // Có thể null
+            "id": 1,
+            "code": "SALE10",
+            // ...
+        }
+    }
+    ```
+*   **Response (Error 404):**
+    ```json
+    {
+        "message": "Order not found"
+    }
+    ```
+## Quản lý Đơn hàng (Order Management)
+
+### User Routes
+
+#### 1. Lấy danh sách đơn hàng của người dùng
+*   **Endpoint:** `GET /api/orders`
+*   **Middleware:** `auth:sanctum`, `role:user`
+*   **Controller:** `OrderController@listOrders`
+*   **Mô tả:** Trả về danh sách các đơn hàng đã đặt của người dùng đang đăng nhập. Mỗi đơn hàng bao gồm ID, ngày đặt, trạng thái và tổng tiền.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    [
+        {
+            "id": 1,
+            "order_date": "2025-06-09T10:00:00.000000Z",
+            "status": "Pending",
+            "total": 50000
+        },
+        {
+            "id": 2,
+            "order_date": "2025-06-08T15:30:00.000000Z",
+            "status": "Delivered",
+            "total": 75000
+        }
+    ]
+    ```
+
+#### 2. Lấy chi tiết đơn hàng của người dùng
+*   **Endpoint:** `GET /api/orders/{id}`
+*   **Middleware:** `auth:sanctum`, `role:user`
+*   **Controller:** `OrderController@getOrderDetails`
+*   **Mô tả:** Trả về thông tin chi tiết của một đơn hàng cụ thể (dựa vào `id`) của người dùng đang đăng nhập. Bao gồm trạng thái, chi tiết sản phẩm, thông tin giao hàng, thông tin thanh toán, và voucher (nếu có).
+*   **Path Parameters:**
+    *   `id` (integer, required): ID của đơn hàng.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    {
+        "id": 1,
+        "order_date": "2025-06-09T10:00:00.000000Z",
+        "status": "Pending",
+        "total": 50000,
+        "discount": 10, // Phần trăm giảm giá từ voucher
+        "final_total": 45000, // Tổng tiền sau khi áp dụng voucher
+        "payment_method": "Cash on Delivery",
+        "products": [
+            {
+                "name": "Cà phê sữa",
+                "quantity": 2,
+                "price": "25000.00"
+            }
+        ],
+        "delivery_info": {
+            "id": 1,
+            "order_id": 1,
+            "recipient_name": "Nguyen Van A",
+            "phone_number": "0123456789",
+            "address": "123 Đường ABC, Quận 1, TP.HCM",
+            "note": null,
+            // ...
+        },
+        "payment_info": {
+            "id": 1,
+            "order_id": 1,
+            "payment_method_id": 1,
+            "amount": "45000.00",
+            "payment_date": "2025-06-09T10:00:00.000000Z",
+            "payment_method": {
+                "id": 1,
+                "name": "Cash on Delivery",
+                // ...
+            }
+            // ...
+        },
+        "voucher": { // Có thể null nếu không áp dụng voucher
+            "id": 1,
+            "code": "SALE10",
+            "discount_percent": "10.00",
+            // ...
+        }
+    }
+    ```
+*   **Response (Error 404):**
+    ```json
+    {
+        "message": "Order not found"
+    }
+    ```
+
+#### 3. Hủy đơn hàng
+*   **Endpoint:** `PUT /api/orders/{id}/cancel`
+*   **Middleware:** `auth:sanctum`, `role:user`
+*   **Controller:** `OrderController@cancelOrder`
+*   **Mô tả:** Cho phép người dùng hủy một đơn hàng đang ở trạng thái "Pending".
+*   **Path Parameters:**
+    *   `id` (integer, required): ID của đơn hàng cần hủy.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    {
+        "id": 1,
+        "order_date": "2025-06-09T10:00:00.000000Z",
+        "status": "Cancel", // Trạng thái đã được cập nhật
+        "total": 50000,
+        "discount": 10,
+        "final_total": 45000,
+        "products": [
+            // ...
+        ],
+        "delivery_info": {
+            // ...
+        },
+        "payment_info": {
+            // ...
+        }
+    }
+    ```
+*   **Response (Error 400):**
+    ```json
+    {
+        "message": "Only pending orders can be cancelled"
+    }
+    ```
+*   **Response (Error 404):**
+    ```json
+    {
+        "message": "Order not found"
+    }
+    ```
+
+### Admin Routes
+
+#### 1. Lấy danh sách tất cả đơn hàng (Admin)
+*   **Endpoint:** `GET /api/admin/orders`
+*   **Middleware:** `auth:sanctum`, `role:admin`
+*   **Controller:** `AdminController@listOrders`
+*   **Mô tả:** Trả về danh sách tất cả đơn hàng trong hệ thống. Bao gồm thông tin người dùng, chi tiết sản phẩm, voucher, thông tin thanh toán, tổng tiền và % giảm giá.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    [
+        {
+            "id": 1,
+            "user_id": 2,
+            "order_date": "2025-06-09T10:00:00.000000Z",
+            "status_id": 1,
+            "voucher_id": 1,
+            // ... các trường khác của order
+            "user": {
+                "id": 2,
+                "full_name": "Nguyen Van A",
+                // ...
+            },
+            "order_details": [
+                {
+                    "id": 1,
+                    "order_id": 1,
+                    "product_id": 1,
+                    "quantity": 2,
+                    "price": "25000.00",
+                    "product": {
+                        "id": 1,
+                        "name": "Cà phê sữa",
+                        // ...
+                    }
+                }
+            ],
+            "voucher": { // Có thể null
+                "id": 1,
+                "code": "SALE10",
+                "discount_percent": "10.00",
+                // ...
+            },
+            "payment_info": {
+                "id": 1,
+                "order_id": 1,
+                "payment_method_id": 1,
+                "amount": "45000.00",
+                // ...
+            },
+            "total_cost": "45000.00", // Tổng tiền sau giảm giá
+            "discount": "10.00" // % giảm giá
+        },
+        // ... các đơn hàng khác
+    ]
+    ```
+
+#### 2. Lấy chi tiết đơn hàng (Admin)
+*   **Endpoint:** `GET /api/admin/orders/{id}`
+*   **Middleware:** `auth:sanctum`, `role:admin`
+*   **Controller:** `AdminController@getOrderDetails`
+*   **Mô tả:** Trả về thông tin chi tiết của một đơn hàng cụ thể (dựa vào `id`) cho admin. Bao gồm trạng thái, chi tiết sản phẩm, thông tin giao hàng, thông tin thanh toán, và voucher (nếu có).
+*   **Path Parameters:**
+    *   `id` (integer, required): ID của đơn hàng.
+*   **Request Body:** Không có
+*   **Response (Success 200):**
+    ```json
+    {
+        "id": 1,
+        "order_date": "2025-06-09T10:00:00.000000Z",
+        "status": "Pending",
+        "total": 50000,
+        "discount": 10, // Phần trăm giảm giá từ voucher
+        "final_total": 45000, // Tổng tiền sau khi áp dụng voucher
+        "payment_method": "Cash on Delivery",
+        "products": [
+            {
+                "name": "Cà phê sữa",
+                "quantity": 2,
+                "price": "25000.00"
+            }
+        ],
+        "delivery_info": {
+            "id": 1,
+            "order_id": 1,
+            "recipient_name": "Nguyen Van A",
+            // ...
+        },
+        "payment_info": {
+            "id": 1,
+            "order_id": 1,
+            "amount": "45000.00",
+            "payment_method": {
+                "id": 1,
+                "name": "Cash on Delivery",
+                // ...
+            }
+            // ...
+        },
+        "voucher": { // Có thể null
+            "id": 1,
+            "code": "SALE10",
+            // ...
+        }
+    }
+    ```
+*   **Response (Error 404):**
+    ```json
+    {
+        "message": "Order not found"
+    }
+    ```
+
+
+
+
+# END
 # API Documentation
 
 ## 1. Lấy thông tin Voucher
