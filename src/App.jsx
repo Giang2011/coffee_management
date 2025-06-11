@@ -1,14 +1,16 @@
+// src/App.jsx
 import { RouterProvider } from 'react-router-dom';
-import { router } from './router/routes.jsx';
-import { AuthProvider } from './context/AuthContext';
-import './index.css';
+import { router } from '@/router/routes';
+import { AuthProvider } from '@/context/AuthContext';
 
-function App() {
+/**
+ * Root component – chỉ bọc Router bởi AuthProvider.
+ * Nếu bạn muốn thêm QueryClientProvider (react‑query) hoặc ThemeProvider, bọc tại đây.
+ */
+export default function App() {
   return (
     <AuthProvider>
       <RouterProvider router={router} />
     </AuthProvider>
   );
 }
-
-export default App;
